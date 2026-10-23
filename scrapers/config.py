@@ -16,3 +16,4 @@ HEADERS = {
     "Authorization": f"Bearer {TOKEN}",
     "Accept": "application/json"
 }
+

@@ -1,1 +1,3 @@
-# Clan of clash
+# Clash Dashboard
+
+

@@ -1,0 +1,57 @@
+# Simpan sebagai: .github/workflows/fetch-coc.yml
+name: Fetch CoC data
+
+on:
+  schedule:
+    # Tiap 10 menit (menit ke-3, 13, 23, ...), jadwal dalam UTC.
+    # Sengaja tidak di menit :00 karena awal jam adalah waktu tersibuk GitHub.
+    - cron: "3,13,23,33,43,53 * * * *"
+  workflow_dispatch:   # tombol "Run workflow" untuk jalan manual
+
+permissions:
+  contents: write      # supaya bisa commit hasil ke repo
+
+concurrency:
+  group: fetch-coc     # cegah dua run saling bertabrakan
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install dependency
+        run: pip install requests
+
+      - name: Ambil data dari CoC API
+        env:
+          COC_API_TOKEN: ${{ secrets.COC_API_TOKEN }}
+          # IP runner GitHub berubah-ubah, jadi lewat proxy RoyaleAPI
+          # (key CoC harus dibuat dengan IP 45.79.218.79).
+          COC_BASE_URL: https://cocproxy.royaleapi.dev/v1
+        run: |
+          if [ -z "$COC_API_TOKEN" ]; then
+            echo "::error::Secret COC_API_TOKEN belum dibuat di Settings > Secrets and variables > Actions"
+            exit 1
+          fi
+          python main.py clan members war warlog
+
+      - name: Commit hasil kalau ada perubahan
+        if: ${{ !cancelled() }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A data || true
+          if git diff --staged --quiet; then
+            echo "Tidak ada perubahan data."
+            exit 0
+          fi
+          git commit -m "data: update $(date -u +'%Y-%m-%d %H:%M') UTC"
+          git pull --rebase
+          git push

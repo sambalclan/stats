@@ -3,8 +3,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-API_TOKEN = os.getenv("TOKEN")
-
+API_TOKEN = os.getenv("COC_API_TOKEN")
 # Base URL API.
 BASE_URL = os.getenv("COC_BASE_URL", "https://api.clashofclans.com/v1")
 

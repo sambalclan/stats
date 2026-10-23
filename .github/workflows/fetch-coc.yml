@@ -1,4 +1,4 @@
-name: Fetch CoC 
+name: Fetch CoC data
 
 on:
   schedule:
@@ -8,11 +8,13 @@ on:
 jobs:
   fetch:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-     - name: Checkout Repo
-        uses: actions/checkout@v3
+      - name: Checkout Repo
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
@@ -26,7 +28,7 @@ jobs:
         run: |
           export PYTHONPATH=$PYTHONPATH:$(pwd)/py
           python py/main.py
-          
+
       - name: Commit
         if: ${{ !cancelled() }}
         run: |

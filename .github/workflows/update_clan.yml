@@ -1,42 +1,36 @@
-name: Fetch CoC data
-
+name: Update Clan Data (Daily)
 on:
   schedule:
-    - cron: "3,13,23,33,43,53 * * * *"
+    - cron: '0 9 * * *' # Runs once a day at 9am UTC
   workflow_dispatch:
 
 jobs:
-  fetch:
+  update-clan:
     runs-on: ubuntu-latest
     steps:
-     - name: Checkout Repo
+      - name: Checkout Repo
         uses: actions/checkout@v3
 
-      - uses: actions/setup-python@v6
+      - name: Setup Python
+        uses: actions/setup-python@v4
         with:
-          python-version: "3.12"
+          python-version: '3.10'
 
-      - name: Install dependency
-        run: pip install requests
+      - name: Install Dependencies
+        run: pip install requests python-dotenv
 
-      - name: looking for coc api
+      - name: Run Clan Scraper
         env:
           COC_API_TOKEN: ${{ secrets.COC_API_TOKEN }}
-          COC_BASE_URL: https://cocproxy.royaleapi.dev/v1
+          CLAN_TAG: ${{ secrets.CLAN_TAG }}
         run: |
-          export PYTHONPATH=$PYTHONPATH:$(pwd)/py
-          python py/main.py
-          
-      - name: Commit
-        if: ${{ !cancelled() }}
+          export PYTHONPATH=$PYTHONPATH:$(pwd)/scrapers
+          python scrapers/clan_scraper.py
+
+      - name: Commit and Push
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A data || true
-          if git diff --staged --quiet; then
-            echo "Tidak ada perubahan data."
-            exit 0
-          fi
-          git commit -m "data: update $(date -u +'%Y-%m-%d %H:%M') UTC"
-          git pull --rebase
+          git config --global user.name "Stats Bot"
+          git config --global user.email "bot@github.com"
+          git add data/
+          git commit -m "Auto-update clan members" || exit 0
           git push

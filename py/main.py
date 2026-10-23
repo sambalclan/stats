@@ -1,3 +1,17 @@
+"""main.py - ambil data dari Clash of Clans API (developer.clashofclans.com).
+
+Setup:
+    pip install requests
+    lalu isi API_TOKEN dan CLAN_TAG di config.py
+
+Pakai:
+    python main.py                   # clan + members + war + warlog
+    python main.py clan members      # pilih sendiri
+    python main.py cwl raids player  # liga perang, raid capital, 1 pemain
+
+Pilihan: clan, members, war, warlog, cwl, raids, player
+Hasil disimpan di folder data/ sebagai file JSON.
+"""
 from __future__ import annotations
 
 import json

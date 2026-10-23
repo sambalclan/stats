@@ -1,0 +1,50 @@
+/* Bottom Navigation */
+#bottomToolbar {
+    position: fixed;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.4rem 0.5rem;
+
+    border-radius: 9999px;
+    z-index: 999;
+
+    background: rgba(43, 41, 48, 0.65);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+
+    border: 1px solid #49454F;
+}
+
+/* Navigation Buttons */
+#bottomToolbar button {
+    background: transparent;
+    color: #CAC4D0;
+    border: none;
+
+    padding: 0.5rem 1rem;
+    min-width: 6rem;
+
+    font-size: 0.85rem;
+    font-weight: 600;
+
+    border-radius: 9999px;
+    cursor: pointer;
+    outline: none;
+
+    transition: 0.3s;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+/* Active Navigation */
+#bottomToolbar button.active {
+    color: #EADDFF;
+    background: #4F378B;
+}

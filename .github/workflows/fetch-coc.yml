@@ -1,59 +1,42 @@
-name: Update Clan Data (Daily)
+name: Fetch CoC 
 
 on:
   schedule:
-    - cron: '0 9 * * *' # Jalan sekali sehari jam 09:00 UTC
+    - cron: "3,13,23,33,43,53 * * * *"
   workflow_dispatch:
 
-permissions:
-  contents: write
-
-concurrency:
-  group: update-clan
-  cancel-in-progress: false
-
 jobs:
-  update-clan:
+  fetch:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
+     - name: Checkout Repo
+        uses: actions/checkout@v3
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
-          python-version: '3.10'
+          python-version: "3.12"
 
-      - name: Install Dependencies
-        run: pip install requests python-dotenv
+      - name: Install dependency
+        run: pip install requests
 
-      - name: Run Clan Scraper
+      - name: looking for coc api
         env:
           COC_API_TOKEN: ${{ secrets.COC_API_TOKEN }}
-          CLAN_TAG: ${{ secrets.CLAN_TAG }}
+          COC_BASE_URL: https://cocproxy.royaleapi.dev/v1
         run: |
-          export PYTHONPATH=$PYTHONPATH:$(pwd)/scrapers
-          python scrapers/clan_scraper.py
-
-      - name: Commit and Push
+          export PYTHONPATH=$PYTHONPATH:$(pwd)/py
+          python py/main.py
+          
+      - name: Commit
+        if: ${{ !cancelled() }}
         run: |
-          git config user.name "Stats Bot"
-          git config user.email "bot@github.com"
-
-          git add data/
-
-          if git diff --cached --quiet; then
-            echo "Tidak ada perubahan data, lewati commit."
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A data || true
+          if git diff --staged --quiet; then
+            echo "Tidak ada perubahan data."
             exit 0
           fi
-
-          git commit -m "Auto-update clan members"
-
-          for i in 1 2 3; do
-            git pull --rebase -X theirs origin main && git push && exit 0
-            echo "Push gagal (percobaan $i), coba lagi..."
-            sleep 5
-          done
-
-          echo "Push gagal setelah 3 percobaan."
-          exit 1
+          git commit -m "data: update $(date -u +'%Y-%m-%d %H:%M') UTC"
+          git pull --rebase
+          git push

@@ -1,26 +1,16 @@
 /**
- * API Service
- * Mengambil data Clash of Clans
+ * Constants & Utilities
  */
 
-// Mengambil data JSON
-export async function fetchData(path) {
-    const response = await fetch(`${path}?t=${Date.now()}`);
+// Mengambil gambar Town Hall
+export const getTHImage = (level) =>
+    `assets/Town_Hall${level}.webp`;
 
-    if (!response.ok) {
-        throw new Error(`Failed to fetch: ${path}`);
-    }
+// Mengubah tanggal Clash of Clans
+export function parseCoCDate(date) {
+    if (!date) return null;
 
-    return response.json();
-}
-
-// Mengambil data clan terbaru
-export async function fetchClanData() {
-    const index = await fetchData('data/clan_stats_index.json');
-
-    if (!index?.length) {
-        throw new Error('Clan data not found');
-    }
-
-    return fetchData(`data/clan_stats/${index[0]}`);
+    return new Date(
+        `${date.slice(0, 4)}-${date.slice(4, 6)}-${date.slice(6, 8)}T${date.slice(9, 11)}:${date.slice(11, 13)}:${date.slice(13, 15)}Z`
+    );
 }

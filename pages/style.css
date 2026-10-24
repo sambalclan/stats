@@ -1,42 +1,60 @@
-/* Body Background Gelap */
+/* Reset & Base Styling */
 html, body {
-  background-color: #121212 !important; /* Memaksa latar belakang menjadi gelap */
-  color: #ffffff !important;            /* Memaksa warna teks menjadi putih */
+  background-color: #121212 !important;
+  color: #ffffff !important;
   margin: 0;
   padding: 0;
   min-height: 100vh;
+  /* Menggunakan ukuran font sistem yang responsif */
+  font-size: 100%; 
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  overflow-x: hidden; /* Mencegah scroll horizontal berlebih */
 }
 
-/* Bottom Navigation Container */
+/* Gambar & Media Responsif */
+img, video, iframe, canvas, svg {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Floating Bottom Navigation Toolbar */
 #bottomToolbar {
     position: fixed;
-    bottom: 1.5rem;
+    /* Menggunakan env(safe-area-inset-bottom) untuk mendukung layar notch/HP modern */
+    bottom: max(1rem, env(safe-area-inset-bottom, 1rem));
     left: 50%;
     transform: translateX(-50%);
 
     display: flex;
-    gap: 0.5rem;
-    padding: 0.4rem 0.5rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.5rem;
+
+    width: calc(100% - 2rem);
+    max-width: 24rem; /* Batas lebar maksimal toolbar */
 
     border-radius: 9999px;
     z-index: 999;
 
     background: rgba(43, 41, 48, 0.85);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
 
-    border: 1px solid #49454F;
+    border: 1px solid rgba(73, 69, 79, 0.8);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
 /* Navigation Buttons */
 #bottomToolbar button {
+    flex: 1;
     background: transparent;
     color: #e6e1e5;
     border: none;
 
-    padding: 0.5rem 1rem;
-    min-width: 6rem;
-
+    padding: 0.6rem 0.75rem;
     font-size: 0.85rem;
     font-weight: 600;
 
@@ -44,16 +62,41 @@ html, body {
     cursor: pointer;
     outline: none;
 
-    transition: 0.3s;
+    transition: background-color 0.25s ease, color 0.25s ease, transform 0.15s ease;
 
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    text-align: center;
+    white-space: nowrap;
+}
+
+#bottomToolbar button:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+#bottomToolbar button:active {
+    transform: scale(0.96);
 }
 
 /* Active Navigation Button */
 #bottomToolbar button.active {
     color: #ffffff;
     background: #6750a4;
+}
+
+/* Penyesuaian khusus untuk Layar Ber-DPI Tinggi atau Layar Sangat Kecil */
+@media (max-width: 380px) {
+    #bottomToolbar button {
+        padding: 0.5rem 0.4rem;
+        font-size: 0.75rem;
+    }
+}
+
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    /* Menghaluskan teks pada layar Retina / High DPI */
+    body {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
 }

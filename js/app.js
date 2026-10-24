@@ -3,27 +3,42 @@
  * Sambal Balado Clan
  */
 
-import { fetchClanData } from './api.js';
-import { renderAbout } from './render.js';
+import { fetchClanData, fetchWarIndex, fetchWarData } from './api.js';
+import { renderAbout, renderMembers, renderWar, setWarData } from './render.js';
 
 // Global state
 let latestClanData = null;
+let currentView = 'about';
 
-// Mengatur tampilan About
-function switchView() {
+// Halaman yang tersedia (id section: section-<nama>, id tab: tab-<nama>)
+const VIEWS = ['about', 'members', 'war'];
+
+// Mengatur halaman yang tampil (about / members / war)
+function switchView(view = 'about') {
+    const hasSection = document.getElementById('section-' + view);
+    const target = VIEWS.includes(view) && hasSection ? view : 'about';
+    currentView = target;
+
     document.querySelectorAll('[id^="section-"]').forEach(section => {
-        section.classList.add('hidden-section');
+        const isTarget = section.id === 'section-' + target;
+        section.classList.toggle('hidden-section', !isTarget);
+        section.style.display = isTarget ? '' : 'none';
     });
 
-    document.getElementById('section-about')
-        ?.classList.remove('hidden-section');
-
-    document.querySelectorAll('.tab-btn').forEach(btn => {
+    document.querySelectorAll('#bottomToolbar button').forEach(btn => {
         btn.classList.remove('active');
     });
 
-    document.getElementById('tab-about')
+    document.getElementById('tab-' + target)
         ?.classList.add('active');
+}
+
+// Tombol tab di navigasi bawah
+function bindTabs() {
+    VIEWS.forEach(view => {
+        document.getElementById('tab-' + view)
+            ?.addEventListener('click', () => switchView(view));
+    });
 }
 
 // Memperbarui header clan
@@ -39,6 +54,28 @@ function updateHeader(name, badgeUrl) {
     }
 }
 
+function bindAboutPageEvents() {
+    const btn = document.getElementById('viewWarHistoryBtn');
+    if (btn) btn.onclick = () => { switchView('war'); };
+}
+
+// Mengambil data war terbaru
+async function loadWarData() {
+    try {
+        const index = await fetchWarIndex();
+        if (!index || index.length === 0) {
+            renderWar(null);
+            return;
+        }
+        const warData = await fetchWarData(index[0]);
+        setWarData(warData);
+        renderWar(warData);
+    } catch (error) {
+        console.warn('Gagal memuat data war:', error);
+        renderWar(null);
+    }
+}
+
 // Mengambil data clan
 async function init() {
     try {
@@ -47,13 +84,17 @@ async function init() {
         latestClanData = clanData;
 
         renderAbout(clanData);
+        renderMembers(clanData);
+        bindAboutPageEvents();
 
         updateHeader(
             clanData.name,
             clanData.badgeUrls?.medium || clanData.badgeUrls?.small
         );
 
-        switchView();
+        switchView(currentView);
+
+        await loadWarData();
 
     } catch (error) {
         console.error('Failed to load clan data:', error);
@@ -87,9 +128,8 @@ document.addEventListener('DOMContentLoaded', () => {
     switchView();
     init();
 
-    // About tab
-    document.getElementById('tab-about')
-        ?.addEventListener('click', switchView);
+    // Tab About, Members & Competitive
+    bindTabs();
 
     // Refresh buttons
     document.querySelectorAll('.sync-btn').forEach(btn => {

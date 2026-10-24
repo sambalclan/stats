@@ -10,27 +10,22 @@
  *   5. Menggambar laporan jadi gambar
  *   6. Halaman hasil gambar
  *   7. Halaman Settings
- *   8. Tampilan About
+ *   8. Tampilan About & Komponen War
+ *   9. Halaman Members
  */
+
+import { roleMap, roleWeight, getTHImage } from './constants.js';
 
 
 // =====================================================
 // 1. PENGATURAN LAPORAN
 // =====================================================
-// Ubah di sini kalau mau ganti judul, warna, atau kolom.
-//
-//   Theme  : 'light' atau 'dark'
-//   Scale  : 1, 2, atau 3 (makin besar makin tajam)
-//   Format : 'png' atau 'jpeg'
-//   Sort   : rank, trophies, donations, received, th, name (khusus Members)
-//   Cols   : kolom yang ikut tampil
-
 const BASE_STYLE = {
     Footer: '',
     Accent: '#d4a017',
     Theme: 'light',
-    Scale: 2,
-    Format: 'png',
+    Scale: 3,
+    Format: 'jpeg',
     Logo: true,
     Date: true,
     Zebra: true,
@@ -54,9 +49,6 @@ const REPORT_CONFIG = {
 // =====================================================
 // 2. DATA KLAN DAN WAR
 // =====================================================
-// Members otomatis diambil dari clan.memberList (lewat renderAbout).
-// War: panggil setWarData(war) setelah data war diambil dari API.
-
 let clanData = null;
 let warData = null;
 
@@ -72,8 +64,6 @@ export function setWarData(war) {
 // =====================================================
 // 3. KOLOM TABEL
 // =====================================================
-// Tiap kolom: id (dipakai di Cols), label (judul kolom), get (isi sel).
-
 const ROLE_NAMES = {
     leader: 'Leader',
     coLeader: 'Co-leader',
@@ -81,6 +71,18 @@ const ROLE_NAMES = {
     member: 'Member',
 };
 
+const MEMBER_COLS = [
+    { id: 'no',        label: 'No',       get: (m, i) => i + 1 },
+    { id: 'name',      label: 'Name',     get: (m) => m.name },
+    { id: 'tag',       label: 'Tag',      get: (m) => m.tag },
+    { id: 'role',      label: 'Role',     get: (m) => ROLE_NAMES[m.role] || m.role || '-' },
+    { id: 'th',        label: 'TH',       get: (m) => m.townHallLevel ?? '-' },
+    { id: 'trophies',  label: 'Trofi',    get: (m) => m.trophies ?? '-' },
+    { id: 'donations', label: 'Donasi',   get: (m) => m.donations ?? '-' },
+    { id: 'received',  label: 'Diterima', get: (m) => m.donationsReceived ?? '-' },
+];
+
+// Kolom tabel war: serangan, bintang, destruksi, dan bintang saat bertahan
 function totalStars(member) {
     return (member.attacks || []).reduce((sum, a) => sum + (a.stars || 0), 0);
 }
@@ -93,33 +95,24 @@ function averageDestruction(member) {
 }
 
 function attacksUsed(member) {
-    const used = member.attacks?.length || 0;
     const max = warData?.attacksPerMember || 2;
-    return used + '/' + max;
+    return (member.attacks?.length || 0) + '/' + max;
+}
+
+function bestDefense(member) {
+    return member.bestOpponentAttack ? member.bestOpponentAttack.stars : '-';
 }
 
 const WAR_COLS = [
-    { id: 'no',          label: 'No',         get: (m, i) => i + 1 },
-    { id: 'name',        label: 'Nama',       get: (m) => m.name },
-    { id: 'th',          label: 'TH',         get: (m) => m.townhallLevel ?? '-' },
-    { id: 'attacks',     label: 'Serangan',   get: (m) => attacksUsed(m) },
-    { id: 'stars',       label: 'Bintang',    get: (m) => totalStars(m) },
-    { id: 'destruction', label: 'Destruksi',  get: (m) => averageDestruction(m) },
-    { id: 'defense',     label: 'Pertahanan', get: (m) => m.bestOpponentAttack ? m.bestOpponentAttack.stars + '★' : '-' },
+    { id: 'no',          label: 'No',        get: (m, i) => i + 1 },
+    { id: 'name',        label: 'Name',      get: (m) => m.name },
+    { id: 'th',          label: 'TH',        get: (m) => m.townhallLevel ?? '-' },
+    { id: 'attacks',     label: 'Serang',    get: (m) => attacksUsed(m) },
+    { id: 'stars',       label: 'Bintang',   get: (m) => totalStars(m) },
+    { id: 'destruction', label: 'Destruksi', get: (m) => averageDestruction(m) },
+    { id: 'defense',     label: 'Bertahan',  get: (m) => bestDefense(m) },
 ];
 
-const MEMBER_COLS = [
-    { id: 'no',        label: 'No',       get: (m, i) => i + 1 },
-    { id: 'name',      label: 'Nama',     get: (m) => m.name },
-    { id: 'tag',       label: 'Tag',      get: (m) => m.tag },
-    { id: 'role',      label: 'Role',     get: (m) => ROLE_NAMES[m.role] || m.role || '-' },
-    { id: 'th',        label: 'TH',       get: (m) => m.townHallLevel ?? '-' },
-    { id: 'trophies',  label: 'Trofi',    get: (m) => m.trophies ?? '-' },
-    { id: 'donations', label: 'Donasi',   get: (m) => m.donations ?? '-' },
-    { id: 'received',  label: 'Diterima', get: (m) => m.donationsReceived ?? '-' },
-];
-
-// Cara mengurutkan anggota (dipilih lewat Sort di pengaturan)
 const MEMBER_SORTS = {
     rank:      (a, b) => (a.clanRank || 0) - (b.clanRank || 0),
     trophies:  (a, b) => (b.trophies || 0) - (a.trophies || 0),
@@ -133,8 +126,6 @@ const MEMBER_SORTS = {
 // =====================================================
 // 4. MENYUSUN ISI LAPORAN
 // =====================================================
-// Hasilnya satu objek: judul, subjudul, header tabel, baris tabel, dll.
-
 function clanLabel() {
     if (!clanData?.name) return '';
     return clanData.tag ? clanData.name + ' (' + clanData.tag + ')' : clanData.name;
@@ -165,17 +156,15 @@ function makeWarReport() {
     const members = [...(warData?.clan?.members || [])]
         .sort((a, b) => (a.mapPosition || 0) - (b.mapPosition || 0));
 
-    let subtitle = clanLabel();
-    if (warData?.clan?.name && warData?.opponent?.name) {
-        subtitle = warData.clan.name + ' vs ' + warData.opponent.name;
-    }
+    const clanName = warData?.clan?.name || clanData?.name || '';
+    const enemyName = warData?.opponent?.name || '';
 
     return makeReport({
         config: REPORT_CONFIG.war,
         allCols: WAR_COLS,
         items: members,
-        subtitle,
-        emptyNote: 'Belum ada data war. Panggil setWarData(war) setelah data war diambil.',
+        subtitle: enemyName ? clanName + ' vs ' + enemyName : clanName,
+        emptyNote: warData ? 'Tidak ada anggota di data war ini.' : 'Data war belum tersedia.',
     });
 }
 
@@ -193,33 +182,26 @@ function makeMembersReport() {
     });
 }
 
-function makeReportByType(type) {
-    return type === 'war' ? makeWarReport() : makeMembersReport();
-}
-
 
 // =====================================================
 // 5. MENGGAMBAR LAPORAN JADI GAMBAR
 // =====================================================
-// Digambar langsung di canvas, jadi tidak butuh library tambahan.
-
 const FONT = 'Arial, Helvetica, sans-serif';
 
 const LAYOUT = {
-    pad: 24,         // jarak tepi
-    cellPad: 12,     // jarak isi sel
-    rowH: 30,        // tinggi baris
-    headH: 34,       // tinggi baris judul kolom
-    headBlock: 88,   // tinggi bagian atas (logo + judul)
+    pad: 24,
+    cellPad: 12,
+    rowH: 30,
+    headH: 34,
+    headBlock: 88,
     minWidth: 520,
 };
 
 const THEMES = {
-    light: { bg: '#ffffff', text: '#111111', sub: '#555555', line: '#dddddd', zebra: '#f5f5f5' },
-    dark:  { bg: '#121212', text: '#f2f2f2', sub: '#a0a0a0', line: '#2e2e2e', zebra: '#1b1b1b' },
+    light: { bg: '#ffffff', text: '#111111', sub: '#555555', line: '#c4c4c4', zebra: '#f5f5f5', border: '#d1d5db' },
+    dark:  { bg: '#121212', text: '#f2f2f2', sub: '#a0a0a0', line: '#3d3d3d', zebra: '#1b1b1b', border: '#3A3A3A' },
 };
 
-// Memuat logo. Kalau gagal (misalnya tidak diizinkan server), logo dilewati.
 function loadImage(url) {
     return new Promise((resolve) => {
         if (!url) return resolve(null);
@@ -232,7 +214,6 @@ function loadImage(url) {
     });
 }
 
-// Lebar tiap kolom mengikuti isi terpanjang
 function measureColumns(report) {
     const ctx = document.createElement('canvas').getContext('2d');
 
@@ -249,7 +230,6 @@ function measureColumns(report) {
     });
 }
 
-// Resolusi diturunkan kalau gambar terlalu tinggi
 function pickScale(wanted, height) {
     let scale = Math.min(4, Math.max(1, Number(wanted) || 2));
     while (height * scale > 16000 && scale > 1) scale -= 1;
@@ -278,13 +258,11 @@ function drawHeader(ctx, report, width, logo, theme) {
     ctx.fillRect(pad, pad + 66, width - pad * 2, 3);
 }
 
-// Menggambar tabel mulai dari posisi y, mengembalikan posisi y berikutnya
 function drawTable(ctx, report, widths, startY, theme) {
     const { pad, cellPad, rowH, headH } = LAYOUT;
     const tableW = widths.reduce((a, b) => a + b, 0);
     let y = startY;
 
-    // baris judul kolom
     ctx.fillStyle = report.accent;
     ctx.fillRect(pad, y, tableW, headH);
     ctx.fillStyle = '#ffffff';
@@ -296,7 +274,6 @@ function drawTable(ctx, report, widths, startY, theme) {
     });
     y += headH;
 
-    // baris data
     ctx.font = '14px ' + FONT;
     report.rows.forEach((row, rowIndex) => {
         if (report.config.Zebra && rowIndex % 2 === 1) {
@@ -317,7 +294,37 @@ function drawTable(ctx, report, widths, startY, theme) {
         y += rowH;
     });
 
+    drawTableLines(ctx, report, widths, startY, y, theme);
     return y;
+}
+
+// Garis penghalang: garis tegak antar kolom dan bingkai di sekeliling tabel
+function drawTableLines(ctx, report, widths, topY, bottomY, theme) {
+    const { pad, headH } = LAYOUT;
+    const tableW = widths.reduce((a, b) => a + b, 0);
+    const bodyTop = topY + headH;
+
+    // garis tegak di bagian isi (termasuk tepi kiri dan kanan) - pakai warna border
+    ctx.fillStyle = theme.border;
+    let x = pad;
+    widths.forEach((w) => {
+        ctx.fillRect(x, bodyTop, 1, bottomY - bodyTop);
+        x += w;
+    });
+    ctx.fillRect(pad + tableW - 1, bodyTop, 1, bottomY - bodyTop);
+
+    // garis pemisah kolom di baris judul - pakai warna border juga
+    ctx.fillStyle = theme.border;
+    x = pad;
+    widths.forEach((w, i) => {
+        if (i > 0) ctx.fillRect(x, topY, 1, headH);
+        x += w;
+    });
+
+    // bingkai luar - pakai warna border
+    ctx.strokeStyle = theme.border;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(pad + 0.5, topY + 0.5, tableW - 1, bottomY - topY - 1);
 }
 
 function drawCenteredText(ctx, text, width, y, font, color) {
@@ -328,8 +335,14 @@ function drawCenteredText(ctx, text, width, y, font, color) {
     ctx.textAlign = 'left';
 }
 
+// Pilih laporan yang mau dibuat: 'members' atau 'war'
+const REPORTS = {
+    members: makeMembersReport,
+    war: makeWarReport,
+};
+
 async function createReportImage(type) {
-    const report = makeReportByType(type);
+    const report = (REPORTS[type] || makeMembersReport)();
     const { config } = report;
     const theme = THEMES[config.Theme] || THEMES.light;
     const { pad, rowH, headH, headBlock, minWidth } = LAYOUT;
@@ -337,7 +350,6 @@ async function createReportImage(type) {
     const logo = await loadImage(report.logoUrl);
     const widths = measureColumns(report);
 
-    // ukuran gambar
     const tableW = widths.reduce((a, b) => a + b, 0);
     const width = Math.max(minWidth, tableW + pad * 2);
     const tableH = report.rows.length ? headH + report.rows.length * rowH : 60;
@@ -345,7 +357,6 @@ async function createReportImage(type) {
     const height = pad + headBlock + tableH + footerH + pad;
     const scale = pickScale(config.Scale, height);
 
-    // kanvas
     const canvas = document.createElement('canvas');
     canvas.width = Math.round(width * scale);
     canvas.height = Math.round(height * scale);
@@ -378,8 +389,6 @@ async function createReportImage(type) {
 // =====================================================
 // 6. HALAMAN HASIL GAMBAR
 // =====================================================
-// Menampilkan gambar + tombol Simpan Gambar di tab baru.
-
 function escapeHtml(value) {
     const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
     return String(value ?? '').replace(/[&<>"']/g, (c) => map[c]);
@@ -420,116 +429,81 @@ export async function createImagePage(type) {
 </html>`;
 }
 
-// Supaya tab Settings bisa memanggil fungsi ini
 if (typeof window !== 'undefined') {
     window.buildImagePage = createImagePage;
 }
 
 
 // =====================================================
-// 7. HALAMAN SETTINGS
+// 7. HALAMAN SETTINGS (MODAL INTERNAL)
 // =====================================================
-// Tab baru berisi dua kartu: War dan Members.
-// Ketuk salah satu -> gambar langsung dibuat.
+// Tombol laporan di modal Settings. Ketuk -> gambar langsung dibuat.
+const SETTINGS_REPORTS = [
+    { type: 'members', icon: '👥', title: 'Members Report', desc: 'Buat gambar daftar anggota' },
+    { type: 'war',     icon: '🏆', title: 'War Report',     desc: 'Buat gambar laporan war' },
+];
 
-const SETTINGS_PAGE = `<!DOCTYPE html>
-<html lang="id">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Settings</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined">
-<style>
-  body { margin: 0; padding: 16px; background: #121212; color: #fff; font-family: Arial, sans-serif; }
-  .wrap { max-width: 560px; margin: 0 auto; }
-  .top { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
-  .top h1 { margin: 0; font-size: 20px; }
-  .close { width: 40px; height: 40px; border: 0; border-radius: 50%;
-           background: rgba(255,255,255,0.1); color: #fff; }
-  .card { width: 100%; display: flex; align-items: center; gap: 16px; margin-bottom: 12px;
-          padding: 16px; text-align: left; color: #fff; background: #1e1e1e;
-          border: 1px solid #3a3a3a; border-radius: 16px; }
-  .card:active { background: #252525; }
-  .icon { flex: none; width: 48px; height: 48px; display: flex; align-items: center;
-          justify-content: center; border-radius: 12px; background: rgba(245,158,11,0.15);
-          color: #f59e0b; }
-  .text b { display: block; font-size: 16px; }
-  .text small { display: block; margin-top: 2px; font-size: 14px; color: #9ca3af; }
-</style>
-</head>
-<body>
-  <div class="wrap">
-    <div class="top">
-      <button id="closeBtn" class="close"><span class="material-symbols-outlined">close</span></button>
-      <h1>Settings</h1>
-    </div>
-
-    <button class="card" data-type="war">
-      <span class="icon"><span class="material-symbols-outlined">swords</span></span>
-      <span class="text"><b>War</b><small>Ketuk untuk membuat gambar laporan war.</small></span>
+const reportButtonHtml = ({ type, icon, title, desc }) => `
+    <button type="button" data-report="${type}" style="width: 100%; display: flex; align-items: center; gap: 12px;
+            margin-top: 10px; padding: 14px; background: #282828; border: 1px solid #3a3a3a; border-radius: 12px;
+            color: #fff; text-align: left; cursor: pointer;">
+        <span style="font-size: 24px;">${icon}</span>
+        <div>
+            <strong style="display: block;">${title}</strong>
+            <small style="color: #a0a0a0;">${desc}</small>
+        </div>
     </button>
+`;
 
-    <button class="card" data-type="members">
-      <span class="icon"><span class="material-symbols-outlined">groups</span></span>
-      <span class="text"><b>Members</b><small>Ketuk untuk membuat gambar daftar anggota.</small></span>
-    </button>
-  </div>
-
-  <script>
-    // Buka tab baru, tampilkan "Membuat gambar...", lalu isi dengan hasilnya
-    function makeImage(type) {
-      var build = window.buildImagePage || (window.opener && window.opener.buildImagePage);
-      if (!build) {
-        alert('Kembali ke dashboard lalu buka Settings lagi.');
-        return;
-      }
-
-      var tab = window.open('', '_blank');
-      if (!tab) {
-        alert('Pop-up diblokir. Izinkan pop-up lalu coba lagi.');
-        return;
-      }
-
-      tab.document.open();
-      tab.document.write('<body style="background:#121212;color:#fff;font-family:sans-serif;padding:24px">Membuat gambar...</body>');
-      tab.document.close();
-
-      build(type)
-        .then(function (html) {
-          tab.document.open();
-          tab.document.write(html);
-          tab.document.close();
-        })
-        .catch(function (error) {
-          tab.document.body.textContent = 'Gagal membuat gambar: ' + error.message;
-        });
+async function generateReport(type, modal) {
+    modal.remove();
+    try {
+        const { dataUrl, mime, title } = await createReportImage(type);
+        const extension = mime === 'image/jpeg' ? 'jpg' : 'png';
+        const link = document.createElement('a');
+        link.href = dataUrl;
+        link.download = makeFileName(title) + '.' + extension;
+        link.click();
+    } catch (err) {
+        alert('Gagal membuat gambar: ' + err.message);
     }
-
-    document.getElementById('closeBtn').onclick = function () { window.close(); };
-
-    document.querySelectorAll('[data-type]').forEach(function (card) {
-      card.onclick = function () { makeImage(card.dataset.type); };
-    });
-  <\/script>
-</body>
-</html>`;
+}
 
 export function openSettings() {
-    const tab = window.open('', '_blank');
-    if (!tab) return;
+    document.getElementById('settingsModal')?.remove();
 
-    tab.document.open();
-    tab.document.write(SETTINGS_PAGE);
-    tab.document.close();
+    const modal = document.createElement('div');
+    modal.id = 'settingsModal';
+    modal.style.cssText = `
+        position: fixed; inset: 0; z-index: 9999;
+        background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(4px);
+        display: flex; align-items: center; justify-content: center; padding: 16px;
+    `;
 
-    tab.buildImagePage = createImagePage;
+    modal.innerHTML = `
+        <div style="background: #1e1e1e; border: 1px solid #3a3a3a; border-radius: 20px;
+                    padding: 20px; width: 100%; max-width: 400px; color: #fff;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin: 0; font-size: 18px; font-weight: bold;">Settings</h2>
+                <button id="closeModalBtn" style="background: rgba(255,255,255,0.1); border: 0; color: #fff;
+                                                 width: 36px; height: 36px; border-radius: 50%; cursor: pointer;">✕</button>
+            </div>
+            ${SETTINGS_REPORTS.map(reportButtonHtml).join('')}
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    document.getElementById('closeModalBtn').onclick = () => modal.remove();
+
+    modal.querySelectorAll('[data-report]').forEach((button) => {
+        button.onclick = () => generateReport(button.dataset.report, modal);
+    });
 }
 
 
 // =====================================================
-// 8. TAMPILAN ABOUT
+// 8. TAMPILAN ABOUT & KARTU WAR
 // =====================================================
-// ===== Link sosial =====
 const SOCIAL_LINKS = {
     whatsapp: {
         label: 'Whatsaap',
@@ -538,17 +512,16 @@ const SOCIAL_LINKS = {
     },
     discord: {
         label: 'Discord',
-        url: 'https://discord.gg/GANTI_DISINI',
+        url: 'https://pin.it/5h7I6Ndwl',
         icon: 'forum',
     },
     telegram: {
         label: 'Telegram',
-        url: 'https://t.me/GANTI_DISINI',
+        url: 'https://t.me/Cstarts',
         icon: 'send',
     },
 };
 
-// ===== Komponen kecil =====
 const renderLabel = (label) => `
     <div class="flex items-center gap-1 bg-[#252525] px-2 py-1 rounded-lg">
         <img src="${label.iconUrls?.small || ''}" class="w-4 h-4" alt="">
@@ -576,7 +549,7 @@ const renderSettingsButton = () => `
         id="settingsBtn"
         type="button"
         aria-label="Settings"
-        class="absolute top-3 right-3 flex items-center justify-center
+        class="flex items-center justify-center
                w-10 h-10 rounded-full bg-white/10 hover:bg-white/20
                text-gray-200 transition-all duration-300
                hover:rotate-45 active:scale-95"
@@ -585,8 +558,8 @@ const renderSettingsButton = () => `
     </button>
 `;
 
-// ===== Render utama =====
-export function renderAbout(clan) {
+
+export function renderAbout(clan, war = typeof warData !== 'undefined' ? warData : null) {
     const container = document.getElementById('aboutContent');
     if (!container || !clan) return;
     setClanData(clan);
@@ -595,55 +568,281 @@ export function renderAbout(clan) {
     const labels = (clan.labels || []).map(renderLabel).join('');
 
     container.innerHTML = `
-        <div class="p-3 md:p-5 w-full">
-            <div class="relative w-full max-w-xl mx-auto overflow-hidden
-                        bg-[#1E1E1E] border border-[#3A3A3A]
-                        p-3 md:p-4 rounded-xl">
+        <div class="p-3 md:p-5 w-full flex flex-col gap-4">
+            <!-- Header Paling Atas: Nama Clan, Tag & Tombol Settings -->
+            <div class="w-full max-w-xl mx-auto">
+                <div class="flex items-center justify-between gap-3 mb-2">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <img
+                            src="${clan.badgeUrls?.medium || ''}"
+                            class="w-10 h-10 md:w-12 md:h-12 shrink-0"
+                            alt="Clan Badge"
+                        >
+                        <div class="min-w-0">
+                            <h1 class="text-xl md:text-2xl font-bold text-white leading-tight truncate">
+                                ${clan.name || 'Unknown Clan'}
+                            </h1>
+                            <p class="text-xs text-gray-400 font-mono">
+                                ${clan.tag || ''}
+                            </p>
+                        </div>
+                    </div>
 
-                <!-- Settings -->
-                ${renderSettingsButton()}
-
-                <!-- Header -->
-                <div class="flex items-center gap-3 mb-4 pr-12">
-                    <img
-                        src="${clan.badgeUrls?.medium || ''}"
-                        class="w-12 h-12 md:w-16 md:h-16 shrink-0"
-                        alt="Clan Badge"
-                    >
-                    <div class="min-w-0">
-                        <h2 class="text-lg md:text-xl font-bold text-white break-words">
-                            ${clan.name || 'Unknown Clan'}
-                        </h2>
-                        <p class="text-xs text-gray-500 break-all">
-                            ${clan.tag || ''}
-                        </p>
+                    <!-- Tombol Settings -->
+                    <div class="shrink-0">
+                        ${renderSettingsButton()}
                     </div>
                 </div>
 
-                <!-- Deskripsi -->
-                <p class="text-xs md:text-sm text-gray-300 mb-4 break-words whitespace-pre-line">
-                    ${clan.description || ''}
-                </p>
+                <!-- Garis Pemisah -->
+                <hr class="border-t border-[#2A2A2A]">
+            </div>
 
-                <!-- Labels -->
-                <div class="mb-4">
-                    <p class="text-xs text-gray-400 mb-2">Clan Labels</p>
-                    <div class="flex flex-wrap gap-2">${labels}</div>
+            <!-- Kartu 1: Clan Info (Deskripsi, Labels, Social Links) -->
+            <div class="w-full max-w-xl mx-auto overflow-hidden
+                        bg-[#1E1E1E] border border-[#3A3A3A]
+                        p-3 md:p-4 rounded-xl flex flex-col gap-3">
+
+                <!-- Deskripsi Clan -->
+                <div class="pb-3 border-b border-[#2A2A2A]">
+                    <div class="text-sm font-bold text-gray-200 mb-1">Description</div>
+                    <div class="text-xs md:text-sm text-gray-300 break-words whitespace-pre-line m-0">
+                        ${clan.description || ''}
+                    </div>
                 </div>
 
-                <!-- Links -->
-                <div class="flex flex-col gap-2">
-                    <div class="flex">${renderLinkButton(whatsapp)}</div>
-                    <div class="flex gap-2">
-                        ${renderLinkButton(discord)}
-                        ${renderLinkButton(telegram)}
+                <!-- Clan Labels -->
+                <div class="pb-3 border-b border-[#2A2A2A]">
+                    <div class="text-sm font-bold text-gray-200 mb-1.5">Clan Labels</div>
+                    <div class="flex flex-wrap gap-1.5">${labels}</div>
+                </div>
+
+                <!-- Link Media Sosial -->
+                <div>
+                    <div class="text-sm font-bold text-gray-200 mb-1.5">Social Links</div>
+                    <div class="flex flex-col gap-2">
+                        <div class="flex">${renderLinkButton(whatsapp)}</div>
+                        <div class="flex gap-2">
+                            ${renderLinkButton(discord)}
+                            ${renderLinkButton(telegram)}
+                        </div>
                     </div>
                 </div>
 
             </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-[#1a1a1a] p-4 md:p-5 rounded-xl border border-gray-800 flex flex-col justify-between min-h-[250px] md:min-h-[300px]">
+                <div class="flex-1 flex flex-col">
+                    <h3 class="medieval text-xs md:text-sm font-bold gold mb-4 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                        War Performance
+                    </h3>
+                    <div class="space-y-3 md:space-y-4 flex-1">
+                        <div class="p-3 bg-[#252525] rounded-lg h-[58px] flex flex-col justify-center"><p class="stat-label">War League</p><p class="stat-value text-white text-[11px] md:text-xs">${clanData.warLeague?.name || 'Unranked'}</p></div>
+                        <div class="grid grid-cols-3 gap-2">
+                            <div class="text-center p-2 bg-[#252525] rounded-lg h-[58px] flex flex-col justify-center"><p class="stat-label">Victories</p><p class="text-green-500 font-bold text-[11px] md:text-xs">${clanData.warWins}</p></div>
+                            <div class="text-center p-2 bg-[#252525] rounded-lg h-[58px] flex flex-col justify-center"><p class="stat-label">Defeats</p><p class="text-red-500 font-bold text-[11px] md:text-xs">${clanData.warLosses}</p></div>
+                            <div class="text-center p-2 bg-[#252525] rounded-lg h-[58px] flex flex-col justify-center"><p class="stat-label">DRAWS</p><p class="text-gray-500 font-bold text-[11px] md:text-xs">${clanData.warTies}</p></div>
+                        </div>
+                        <button id="viewWarHistoryBtn" class="w-full py-2 bg-[#252525] border border-gray-700 rounded h-[58px] text-[9px] md:text-[10px] font-bold uppercase hover:border-gold transition-colors">View War History <span class="ml-1 opacity-70">›</span></button>
+                    </div>
+                </div>
+            </div>
         </div>
+    </div>
     `;
 
     document.getElementById('settingsBtn')
         ?.addEventListener('click', openSettings);
+}
+
+
+// =====================================================
+// 9. HALAMAN MEMBERS
+// =====================================================
+// Daftar anggota klan. Urutan bisa diganti lewat tombol di atas daftar.
+// Container #membersContent dibuat otomatis kalau belum ada di HTML.
+
+const MEMBER_PAGE_SORTS = {
+    rank:      MEMBER_SORTS.rank,
+    trophies:  MEMBER_SORTS.trophies,
+    donations: MEMBER_SORTS.donations,
+    name:      MEMBER_SORTS.name,
+    role:      (a, b) => (roleWeight[b.role] || 0) - (roleWeight[a.role] || 0)
+                         || (a.clanRank || 0) - (b.clanRank || 0),
+};
+
+const MEMBER_SORT_BUTTONS = [
+    { id: 'rank',      label: 'Rank' },
+    { id: 'trophies',  label: 'Trofi' },
+    { id: 'donations', label: 'Donasi' },
+    { id: 'role',      label: 'Role' },
+    { id: 'name',      label: 'Nama' },
+];
+
+let membersSortKey = 'rank';
+
+// Mencari #membersContent, kalau belum ada dibuat di bawah #section-about
+function getMembersContainer() {
+    const existing = document.getElementById('membersContent');
+    if (existing) return existing;
+
+    const about = document.getElementById('section-about');
+    if (!about || !about.parentNode) return null;
+
+    const section = document.createElement('div');
+    section.id = 'section-members';
+    section.className = 'hidden-section';
+
+    const container = document.createElement('div');
+    container.id = 'membersContent';
+
+    section.appendChild(container);
+    about.parentNode.insertBefore(section, about.nextSibling);
+    return container;
+}
+
+const renderSortButton = ({ id, label }) => {
+    const active = id === membersSortKey;
+    const style = active
+        ? 'bg-amber-500 text-black border-amber-500'
+        : 'bg-transparent text-gray-400 border-[#3A3A3A]';
+    return `
+        <button type="button" data-sort="${id}"
+                class="px-3 py-1.5 rounded-full text-xs font-semibold border ${style}">
+            ${label}
+        </button>
+    `;
+};
+
+const renderMemberRow = (member, index) => `
+    <div class="flex items-center gap-3 bg-[#1E1E1E] border border-[#3A3A3A] rounded-xl p-3">
+        <span class="w-6 text-center text-xs text-gray-500 font-mono">${index + 1}</span>
+        <img
+            src="${getTHImage(member.townHallLevel)}"
+            class="w-10 h-10 shrink-0 object-contain"
+            alt="TH${member.townHallLevel}"
+            onerror="this.style.visibility='hidden'"
+        >
+        <div class="min-w-0 flex-1">
+            <p class="text-sm font-bold text-white truncate">${escapeHtml(member.name)}</p>
+            <p class="text-[11px] text-gray-400 truncate">
+                ${roleMap[member.role] || member.role} · TH${member.townHallLevel}
+            </p>
+        </div>
+        <div class="text-right shrink-0">
+            <p class="text-sm font-bold text-amber-500">${member.trophies}</p>
+            <p class="text-[10px] text-gray-500">Donasi ${member.donations}/${member.donationsReceived}</p>
+        </div>
+    </div>
+`;
+
+export function renderMembers(clan) {
+    const container = getMembersContainer();
+    if (!container || !clan) return;
+
+    const sorter = MEMBER_PAGE_SORTS[membersSortKey] || MEMBER_PAGE_SORTS.rank;
+    const members = [...(clan.memberList || [])].sort(sorter);
+
+    const buttons = MEMBER_SORT_BUTTONS.map(renderSortButton).join('');
+    const rows = members.length
+        ? members.map(renderMemberRow).join('')
+        : '<p class="text-sm text-gray-500 text-center py-6">Data anggota belum tersedia.</p>';
+
+    container.innerHTML = `
+        <div class="p-3 md:p-5 pb-28 w-full">
+            <div class="w-full max-w-xl mx-auto">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-lg font-bold text-white">Members</h2>
+                    <span class="text-xs text-gray-400">${clan.members ?? members.length}/50</span>
+                </div>
+                <div class="flex flex-wrap gap-2 mb-3">${buttons}</div>
+                <div class="flex flex-col gap-2">${rows}</div>
+            </div>
+        </div>
+    `;
+
+    // Ketuk tombol urutan -> daftar digambar ulang
+    container.onclick = (event) => {
+        const button = event.target.closest('[data-sort]');
+        if (!button) return;
+        membersSortKey = button.dataset.sort;
+        renderMembers(clan);
+    };
+    
+}
+
+// =====================================================
+// 10. HALAMAN COMPETITIVE (WAR)
+// =====================================================
+export function renderWar(war) {
+    const container = document.getElementById('warDataContainer');
+    if (!container) return;
+
+    if (!war || !war.clan) {
+        container.innerHTML = `
+            <div class="bg-[#1E1E1E] border border-[#3A3A3A] p-4 rounded-xl text-center text-gray-400">
+                Data war/competitive belum tersedia atau belum diisi.
+            </div>
+        `;
+        return;
+    }
+
+    const clan = war.clan;
+    const opponent = war.opponent;
+    const state = war.state || 'ended';
+
+    const members = [...(clan.members || [])].sort((a, b) => (a.mapPosition || 0) - (b.mapPosition || 0));
+
+    container.innerHTML = `
+        <div class="flex flex-col gap-4">
+            <!-- War Overview Card -->
+            <div class="bg-[#1E1E1E] border border-[#3A3A3A] p-4 rounded-xl flex flex-col gap-3">
+                <div class="flex items-center justify-between border-b border-[#2A2A2A] pb-3">
+                    <div class="flex items-center gap-2">
+                        <img src="${clan.badgeUrls?.small || ''}" class="w-8 h-8" alt="" onerror="this.style.display='none'">
+                        <div>
+                            <p class="font-bold text-white text-sm">${escapeHtml(clan.name)}</p>
+                            <p class="text-xs text-amber-500 font-bold">★ ${clan.stars || 0} (${(clan.destructionPercentage || 0).toFixed(1)}%)</p>
+                        </div>
+                    </div>
+                    <span class="text-xs font-bold text-gray-400">VS</span>
+                    <div class="flex items-center gap-2 text-right">
+                        <div>
+                            <p class="font-bold text-white text-sm">${escapeHtml(opponent?.name || 'Musuh')}</p>
+                            <p class="text-xs text-amber-500 font-bold">★ ${opponent?.stars || 0} (${(opponent?.destructionPercentage || 0).toFixed(1)}%)</p>
+                        </div>
+                        <img src="${opponent?.badgeUrls?.small || ''}" class="w-8 h-8" alt="" onerror="this.style.display='none'">
+                    </div>
+                </div>
+                <div class="text-xs text-gray-400 flex justify-between">
+                    <span>Status: <strong class="text-white capitalize">${state}</strong></span>
+                    <span>Ukuran Tim: <strong class="text-white">${war.teamSize || members.length} vs ${war.teamSize || members.length}</strong></span>
+                </div>
+            </div>
+
+            <!-- Member War Performance List -->
+            <div class="flex flex-col gap-2">
+                <h3 class="text-sm font-bold text-gray-200">Daftar Anggota War</h3>
+                ${members.map((m, idx) => `
+                    <div class="flex items-center gap-3 bg-[#1E1E1E] border border-[#3A3A3A] rounded-xl p-3">
+                        <span class="w-6 text-center text-xs text-gray-500 font-mono">${idx + 1}</span>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-sm font-bold text-white truncate">${escapeHtml(m.name)}</p>
+                            <p class="text-[11px] text-gray-400">TH${m.townhallLevel || '-'} · Posisi #${m.mapPosition || '-'}</p>
+                        </div>
+                        <div class="text-right shrink-0">
+                            <p class="text-xs font-bold text-amber-500">
+                                Serangan: ${m.attacks?.length || 0}/${war.attacksPerMember || 2}
+                            </p>
+                            <p class="text-[10px] text-gray-400">
+                                Total Bintang: ★ ${totalStars(m)} (${averageDestruction(m)})
+                            </p>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
 }

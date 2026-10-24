@@ -1,39 +1,53 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- External Dependencies -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Sambal Balado Clan</title>
+
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"> </script>
-    
-  <link href="https://fonts.googleapis.com/css2?family=Fruktur" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined" rel="stylesheet">
-    <title>Dashboard</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Fruktur" rel="stylesheet">
+
+    <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined" rel="stylesheet">
+
+    <!-- Custom CSS -->
     <link rel="stylesheet" href="pages/style.css">
 </head>
+
 <body>
-    
-    <div id="bottomToolbar">
+
+    <!-- Navigation -->
+<div id="bottomToolbar">
     <button id="tab-about" class="active">
-      <span data-i18n="navHome">Dashboard</span>
+        <span>Dashboard</span>
     </button>
     <button id="tab-members">
-      <span data-i18n="navApps">Member</span>
+        <span>Members</span>
     </button>
-  </div>
-      <div class="w-full">
-        <!-- Section: About -->
-        <div id="section-about" class="lg:col-span-12 hidden-section">
-            <div id="aboutContent"></div>
-        </div>
-        
+    <button id="tab-war">
+        <span>Competitive
+</span>
+    </button>
+    </div>
 
-<script type="module" src="js/app.js"></script>
+    <!-- Main Content -->
+    <main class="w-full">
+
+        <!-- About Section -->
+        <section id="section-about" class="lg:col-span-12">
+            <div id="aboutContent"></div>
+        </section>
+
+    </main>
+
+    <!-- Main JavaScript -->
+    <script type="module" src="js01/app.js"></script>
 
 </body>
 </html>

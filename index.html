@@ -1,16 +1,15 @@
 <!DOCTYPE html>
-<html lang="id" class="bg-[#121212] min-h-screen text-slate-100">
+<html lang="id" class="bg-[#121212]">
 <head>
     <meta charset="UTF-8">
-    <!-- Viewport agar responsif di berbagai DPI dan ukuran layar -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
     <title>Sambal Balado Clan</title>
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- Google Fonts -->
+    <!-- Google Fonts & Material Symbols -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Inter:wght@400;600&family=Fruktur&display=swap" rel="stylesheet">
@@ -20,10 +19,10 @@
     <link rel="stylesheet" href="pages/style.css">
 </head>
 
-<body class="bg-[#121212] text-white min-h-screen flex flex-col justify-between antialiased selection:bg-purple-600 selection:text-white">
+<body class="bg-[#121212] text-white min-h-screen flex flex-col justify-between antialiased">
 
-    <!-- Main Content Container dengan batas lebar dan padding fleksibel -->
-    <main class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-28 flex-1">
+    <!-- Main Content -->
+    <main class="w-full max-w-5xl mx-auto px-4 pt-4 pb-28 flex-1">
 
         <!-- About Section -->
         <section id="section-about" class="w-full">
@@ -45,8 +44,8 @@
 
     </main>
 
-    <!-- Bottom Navigation -->
-    <nav id="bottomToolbar" aria-label="Main Navigation">
+    <!-- Bottom Navigation Toolbar -->
+    <div id="bottomToolbar" aria-label="Main Navigation">
         <button id="tab-about" class="active">
             <span>Dashboard</span>
         </button>
@@ -56,7 +55,7 @@
         <button id="tab-war">
             <span>Competitive</span>
         </button>
-    </nav>
+    </div>
 
     <!-- Main JavaScript -->
     <script type="module" src="js/app.js"></script>
